@@ -3,10 +3,10 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Dashboard Customer</h2>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white p-6 shadow-sm sm:rounded-lg">
-                Halo, {{ auth()->user()->name }}. Anda login sebagai <b>customer</b>.
+    <div class="bg-white p-6 shadow-sm sm:rounded-lg">
+            Halo, {{ auth()->user()->name }}. Anda login sebagai <b>customer</b>.
+            <div class="mt-4">
+                <a href="{{ route('customer.videos.index') }}" class="text-indigo-600 underline">Lihat daftar video</a>
             </div>
         </div>
     </div>

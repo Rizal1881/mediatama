@@ -8,6 +8,7 @@ use App\Models\VideoAccess;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
@@ -129,6 +130,59 @@ class AccessRequestResource extends Resource
 
                         Notification::make()
                             ->title('Permintaan ditolak')
+                            ->success()
+                            ->send();
+                    }),
+
+                Action::make('edit')
+                    ->label('Edit')
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->color('gray')
+                    ->modalHeading('Edit permintaan akses')
+                    ->modalDescription('Ubah status atau waktu akses. Memilih Menunggu atau Ditolak akan mencabut akses customer.')
+                    ->fillForm(fn (AccessRequest $record): array => [
+                        'status' => $record->status,
+                        'expires_at' => $record->videoAccess?->expires_at,
+                    ])
+                    ->schema([
+                        Select::make('status')
+                            ->label('Status')
+                            ->options([
+                                'pending' => 'Menunggu',
+                                'approved' => 'Disetujui',
+                                'rejected' => 'Ditolak',
+                            ])
+                            ->required()
+                            ->live(),
+
+                        DateTimePicker::make('expires_at')
+                            ->label('Akses berlaku sampai')
+                            ->seconds(false)
+                            ->visible(fn ($get): bool => $get('status') === 'approved')
+                            ->required(fn ($get): bool => $get('status') === 'approved'),
+                    ])
+                    ->action(function (AccessRequest $record, array $data): void {
+                        DB::transaction(function () use ($record, $data) {
+                            $record->update(['status' => $data['status']]);
+
+                            if ($data['status'] === 'approved') {
+                                VideoAccess::updateOrCreate(
+                                    ['access_request_id' => $record->id],
+                                    [
+                                        'user_id' => $record->user_id,
+                                        'video_id' => $record->video_id,
+                                        'start_at' => $record->videoAccess?->start_at ?? now(),
+                                        'expires_at' => $data['expires_at'],
+                                    ]
+                                );
+                            } else {
+                                // Status bukan Disetujui: cabut akses customer
+                                $record->videoAccess?->delete();
+                            }
+                        });
+
+                        Notification::make()
+                            ->title('Permintaan diperbarui')
                             ->success()
                             ->send();
                     }),

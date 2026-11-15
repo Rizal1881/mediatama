@@ -11,7 +11,7 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return auth()->user()->role === 'admin'
         ? redirect('/admin')
-        : redirect()->route('customer.dashboard');
+        : redirect()->route('customer.videos.index');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
